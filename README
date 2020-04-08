@@ -1,0 +1,15 @@
+ ### 在后台线程中渲染
+  GLSurfaceView 会在一个单独的线程中调用渲染器的方法，GLSurfaceView会以显示设备的刷新频率不断的进行渲染，
+  只要用GLSurfaceView.RENDERMODE_WHEN_DIRTY作为参数调用GLSurfaceView.setRenderMode()
+
+
+  思考： 既然Android的GLSurfaceView在后台线程中执行渲染，只能在这个渲染线程中调用OpenGL，在Android主线程中
+  使用UI（用户界面）相关调用。这就涉及了主线程和子线程的交互问题。
+
+  Handler+Message 的操作。
+
+
+  在主线程中的GLSurfaceView实例可以调用queueEvent() 方法传递一个Runnable给后台渲染线程。
+  渲染线程可以调用Activity的runOnUIThread()来传递事件给主线程。
+
+
