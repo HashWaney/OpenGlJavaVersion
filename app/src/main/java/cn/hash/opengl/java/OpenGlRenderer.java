@@ -79,13 +79,13 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     float[] tableVerticesWithTriangle = {
             //Triangle1  X,Y,R,G,B
             0f, 0f, 1f, 1f, 1f,
-            0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-            -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+            -0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
 
             //Triangle2
-            -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-            0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-            0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+            -0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
+            0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
+            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
 
 
             //line1
@@ -171,8 +171,8 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         //set the opengl viewport to fill the entire surface
-        glViewport(0, 0, width, height);
         Log.i("Hash", "width: " + width + " height:" + height);
+        glViewport(0, 0, width, height);
 
         // TODO: 2020-04-09 旋转屏幕导致宽高比变化，因此需要做适配
         final float aspectRatio = width > height ?
