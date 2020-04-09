@@ -43,7 +43,7 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     //点的组合（a,b)
-    private static final int POSITION_COMPONENT_COUNT = 2;
+    private static final int POSITION_COMPONENT_COUNT = 4;
     //每个点的占用字节数
     private static final int BYTES_PER_FLOAT = 4;
 
@@ -75,30 +75,56 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     //TODO 只能看到桌子的一个角 为什么呢，OpenGL的坐标范围只在[-1,1] 区间 ，需要将定义的坐标映射到屏幕上的实际物理坐标
+//
+//    float[] tableVerticesWithTriangle = {
+//            //Triangle1  X,Y,R,G,B
+//            0f, 0f, 1f, 1f, 1f,
+//            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+//            -0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+//
+//            //Triangle2
+//            -0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
+//            0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
+//            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+//
+//
+//            //line1
+//            -0.5f, 0f, 1f, 0f, 0f,
+//            0.5f, 0, 0f, 1f, 0f,
+//
+//            //mallets
+//            0f, -0.25f, 0f, 0f, 1f,
+//            0, 0.25f, 1f, 0f, 0f
+//
+//
+//    };
 
+
+    //TODO 展示的是一个立体效果，效果为站在桌子的一侧水平观察对面，立体感，
+    // 加入了Z分量和W分量，Z分量设置为0f，W分量远的设置大一些，近的设置小点，呈现一种立体效果。
+    // OpenGL会自动使用我们的w值做透视除法。 但是这是一种硬编码方式，如果想让这些物体更动态，
+    // 就需要用到矩阵来生成这些值， 比如改变桌子的角度，缩放，
     float[] tableVerticesWithTriangle = {
-            //Triangle1  X,Y,R,G,B
-            0f, 0f, 1f, 1f, 1f,
-            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
-            -0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+            //Triangle1  X,Y,Z,W,R,G,B
+            0f, 0f, 0f, 1.5f,        1f, 1f, 1f,
+            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
+            -0.7f, 0.7f, 0f, 2f,     0.7f, 0.7f, 0.7f,
 
-            //Triangle2
-            -0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
-            0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
-            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+            -0.7f, -0.7f, 0f, 1f,    0.7f, 0.7f, 0.7f,
+            0.7f, -0.7f, 0f, 1f,     0.7f, 0.7f, 0.7f,
+            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
 
 
             //line1
-            -0.5f, 0f, 1f, 0f, 0f,
-            0.5f, 0, 0f, 1f, 0f,
+            -0.5f, 0f,0f,1.5f,       1f, 0f, 0f,
+            0.5f, 0f, 0f,1.5f,       0f, 1f, 0f,
 
             //mallets
-            0f, -0.25f, 0f, 0f, 1f,
-            0, 0.25f, 1f, 0f, 0f
+            0f, -0.25f,0f,1.25f,     0f, 0f, 1f,
+            0, 0.25f,0f,1.25f,       1f, 0f, 0f
 
 
     };
-
 
     public OpenGlRenderer(Context context) {
         this.context = context;
@@ -180,7 +206,7 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
                 (float) height / (float) width;
 
         if (width > height) { //横屏情况下，扩展宽度的坐标范围，范围由[-1,1] -->
-                            // [-aspectRatio,aspectRatio] 高度保持[-1,1]
+            // [-aspectRatio,aspectRatio] 高度保持[-1,1]
             Matrix.orthoM(projectMatrix, 0, -aspectRatio, aspectRatio,
                     -1f, 1f, -1f, 1f);
 
@@ -200,8 +226,8 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         //clear the  rendering surface  and invoke the glClearColor to fill the screen
         glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //TODO 传递矩阵给着色器，
-        glUniformMatrix4fv(uMatrixLocation,1,
-                false,projectMatrix,0);
+        glUniformMatrix4fv(uMatrixLocation, 1,
+                false, projectMatrix, 0);
 
         //绘制矩形
         glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
@@ -210,8 +236,6 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         //绘制点
         glDrawArrays(GL_POINTS, 8, 1);
         glDrawArrays(GL_POINTS, 9, 1);
-
-
 
 
     }
