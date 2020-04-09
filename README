@@ -323,6 +323,86 @@
 
 
 
+     ## 理解纹理
+
+       纹理可以用来表示图像，照片，甚至由一个数学算法生成的分形数据，每个二维的纹理都由许多个小的纹理元素组成，小块的数据，
+
+
+       纹理的坐标空间 范围 （0，0） -- （1，1）
+
+       图像的默认方向，y轴向下，y的值随着向图像的底部移动而增加，
+
+
+       把纹理加载进入OpenGL
+
+       1.将图像文件的数据加载到一个openGl的纹理中，
+      final int[] textureId =new int[1];
+
+       glGenTextures(1,textureId,0);
+
+       2.加载位图数据并与纹理绑定
+
+        BitmapFactory.Options options =new BitmapFactory.Options();
+        options.inScaled=false; //原始数据
+
+        Bitmap bitmap =BitmapFactory.decodeResource(context.getResource(),resourceId);
+        if(bitmap==null){
+            //位图加载失败
+            glDeleteTextures(1,textureId,0);
+            return 0;
+        }
+        glBindTexture(GL_TEXTURE_2D,textureId[0]);
+
+        3.设置纹理过滤：当纹理大小被扩大或者缩小时候，需要使用纹理过滤说明会发生什么，最近邻过滤，双线性过滤（平滑，抗锯齿）mip贴图
+
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+
+        4.加载纹理到OpenGl并返回ID
+           //告诉OpenGL读取bitmap定义的位图数据，并把它复制到当前绑定的纹理对象
+           texImage2D(GL_TEXTURE_2D,0,bitmap,0);
+           bitmap.recycle();//数据已经加载到了OpenGl中，应该调用bitmap对象的recycle方法进行数据的释放
+
+        5.完成纹理的加载，就需要解除与这个纹理的绑定，这样就不会用其他的纹理方法调用改变这个纹理
+        glBindTexture(GL_TEXTURE_2D,0);
+
+        6.返回纹理ID
+            return textureId[0];
+
+
+
+        创建新的着色器集合 （与纹理相关）
+
+        顶点着色器
+
+        uniform mat4 u_Matrix;
+
+        attribute vec4 a_Position;
+        attribute vec2 a_TextureCoordinates;
+
+        varying    vec2 v_TextureCoordinates;
+
+        void main(){
+            v_TextureCoordinates = a_TextureCoordinates;
+            gl_Position =u_Matrix*a_Position;
+        }
+        纹理坐标 a_TextureCoordinates 两个分量S T
+
+
+        片段着色器
+        precision mediump float;
+
+        uniform sample2D u_TextureUnit;
+
+        varying vec2 v_TextureCoordinates;
+
+        void main(){
+            gl_FragColor=texture2D(u_TextUnit,v_TextureCoordinates);
+        }
+        sample2D : 这个变量类型指的是一个二维纹理数据的数组
+
+        texture2D：读入纹理中那个特定坐标处的颜色值。接着通过把结果赋值给
+        gl_FragColor,这样就可以设置片段的颜色了。
 
 
 

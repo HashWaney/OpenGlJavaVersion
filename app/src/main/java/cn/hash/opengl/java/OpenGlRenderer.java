@@ -60,12 +60,12 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     // color 使用attribute 形式进行颜色属性的数据更新， 而不是采用unifrom形式只能单一的绘制一种确定的颜色。
-    private static final String V_COLOR = "a_Color";
-    private int vColor;
+    private static final String A_COLOR = "a_Color";
+    private int aColor;
 
 
-    private static final String V_POSITION = "v_Position";
-    private int vPosition;
+    private static final String A_POSITION = "a_Position";
+    private int aPosition;
 
     //定义一个矩阵，该矩阵会把虚拟坐标空间变换回归一化设备坐标
     private static final String U_MATRIX = "u_Matrix";
@@ -87,18 +87,18 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     float[] tableVerticesWithTriangle = {
             //Triangle1  X,Y,R,G,B
             0f, 0f, 1f, 1f, 1f,
-            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
-            -0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+            0.4f, 0.8f, 0.7f, 0.7f, 0.7f,
+            -0.4f, 0.8f, 0.7f, 0.7f, 0.7f,
 
             //Triangle2
-            -0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
-            0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
-            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+            -0.4f, -0.8f, 0.7f, 0.7f, 0.7f,
+            0.4f, -0.8f, 0.7f, 0.7f, 0.7f,
+            0.4f, 0.8f, 0.7f, 0.7f, 0.7f,
 
 
             //line1
-            -0.5f, 0f, 1f, 0f, 0f,
-            0.5f, 0, 0f, 1f, 0f,
+            -0.4f, 0f, 1f, 0f, 0f,
+            0.4f, 0, 0f, 1f, 0f,
 
             //mallets
             0f, -0.25f, 0f, 0f, 1f,
@@ -108,31 +108,7 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     };
 
 
-    //TODO 展示的是一个立体效果，效果为站在桌子的一侧水平观察对面，立体感，
-    // 加入了Z分量和W分量，Z分量设置为0f，W分量远的设置大一些，近的设置小点，呈现一种立体效果。
-    // OpenGL会自动使用我们的w值做透视除法。 但是这是一种硬编码方式，如果想让这些物体更动态，
-    // 就需要用到矩阵来生成这些值， 比如改变桌子的角度，缩放，
-//    float[] tableVerticesWithTriangle = {
-//            //Triangle1  X,Y,Z,W,R,G,B
-//            0f, 0f, 0f, 1.5f,        1f, 1f, 1f,
-//            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
-//            -0.7f, 0.7f, 0f, 2f,     0.7f, 0.7f, 0.7f,
-//
-//            -0.7f, -0.7f, 0f, 1f,    0.7f, 0.7f, 0.7f,
-//            0.7f, -0.7f, 0f, 1f,     0.7f, 0.7f, 0.7f,
-//            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
-//
-//
-//            //line1
-//            -0.5f, 0f,0f,1.5f,       1f, 0f, 0f,
-//            0.5f, 0f, 0f,1.5f,       0f, 1f, 0f,
-//
-//            //mallets
-//            0f, -0.25f,0f,1.25f,     0f, 0f, 1f,
-//            0, 0.25f,0f,1.25f,       1f, 0f, 0f
-//
-//
-//    };
+
 
     public OpenGlRenderer(Context context) {
         this.context = context;
@@ -166,10 +142,9 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         glUseProgram(program);
 
         //获取一个uniform的位置：用来告诉GPU在绘制的时候设置颜色
-//        uColorLocation = glGetUniformLocation(program, U_COLOR);
         //获取属性的位置：用来告诉GPU分配位置
-        vPosition = glGetAttribLocation(program, V_POSITION);
-        vColor = glGetAttribLocation(program, V_COLOR);
+        aPosition = glGetAttribLocation(program, A_POSITION);
+        aColor = glGetAttribLocation(program, A_COLOR);
 
         //正交矩阵
         uMatrixLocation = glGetUniformLocation(program, U_MATRIX);
@@ -187,15 +162,15 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
          */
 
         //告诉OpenGL去哪读取数据，读的数据包括大小，多少个为一组。
-        glVertexAttribPointer(vPosition, POSITION_COMPONENT_COUNT, GL_FLOAT, false, STRIDE, vertexData);
+        glVertexAttribPointer(aPosition, POSITION_COMPONENT_COUNT, GL_FLOAT, false, STRIDE, vertexData);
 
         //使得OpenGL去vPosition去寻找数据
-        glEnableVertexAttribArray(vPosition);
+        glEnableVertexAttribArray(aPosition);
 
         //将指针指向颜色属性的位置
         vertexData.position(POSITION_COMPONENT_COUNT);
-        glVertexAttribPointer(vColor, COLOR_COMPONENT_COUNT, GL_FLOAT, false, STRIDE, vertexData);
-        glEnableVertexAttribArray(vColor);
+        glVertexAttribPointer(aColor, COLOR_COMPONENT_COUNT, GL_FLOAT, false, STRIDE, vertexData);
+        glEnableVertexAttribArray(aColor);
 
 
     }
@@ -208,25 +183,8 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         Log.i("Hash", "width: " + width + " height:" + height);
         glViewport(0, 0, width, height);
 
-        // TODO: 2020-04-09 旋转屏幕导致宽高比变化，因此需要做适配
-//        final float aspectRatio = width > height ?
-//                (float) width / (float) height :
-//                (float) height / (float) width;
-//
-//        if (width > height) { //横屏情况下，扩展宽度的坐标范围，范围由[-1,1] -->
-//            // [-aspectRatio,aspectRatio] 高度保持[-1,1]
-//            Matrix.orthoM(projectMatrix, 0, -aspectRatio, aspectRatio,
-//                    -1f, 1f, -1f, 1f);
-//
-//        } else {
-//            Matrix.orthoM(projectMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio,
-//                    -1f, 1f);
-//
-//        }
 
-        //TODO 桌子不见了，没有给桌子指定z的位置，默认情况下处于z为0 的位置，因为视锥体是从z值为-1的位置开始
-        //除非把它移动到那个距离内。
-        //因此在使用投影矩阵进行投影之前，使用一个平移矩阵把桌子移出来，
+
         MatrixHelper.perspectiveM(projectMatrix, 45,
                 (float) width / (float) height,
                 1f, 10f);
