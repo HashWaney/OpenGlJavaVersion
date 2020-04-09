@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         myGlSurfaceView.setEGLContextClientVersion(2);
-        myGlSurfaceView.setRenderer(new OpenGlRenderer());
+        myGlSurfaceView.setRenderer(new OpenGlRenderer(this));
         rendererSet = true;
 
         //2. set GlSurfaceView  to ContentView
@@ -56,9 +56,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (myGlSurfaceView!=null)
-        {
-            myGlSurfaceView.onResume();;
+        if (myGlSurfaceView != null) {
+            myGlSurfaceView.onResume();
+            ;
         }
     }
 }
