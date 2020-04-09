@@ -27,9 +27,12 @@ import static android.opengl.GLES20.glEnableVertexAttribArray;
 import static android.opengl.GLES20.glGetAttribLocation;
 import static android.opengl.GLES20.glGetUniformLocation;
 import static android.opengl.GLES20.glUniform4f;
+import static android.opengl.GLES20.glUniformMatrix4fv;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 import static android.opengl.GLES20.glViewport;
+
+import android.opengl.Matrix;
 
 /**
  * Created by Hash on 2020-04-08.
@@ -50,19 +53,20 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     //跨度 就是隔多少个点访问下一个点
     private static final int STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT;
 
-    //to use the fragment_shade define varying named u_Color
-    private static final String U_COLOR = "u_Color";
 
     // color 使用attribute 形式进行颜色属性的数据更新， 而不是采用unifrom形式只能单一的绘制一种确定的颜色。
     private static final String V_COLOR = "a_Color";
     private int vColor;
 
 
-    //define varying to accept the value
-    private int uColorLocation;
-
     private static final String V_POSITION = "v_Position";
     private int vPosition;
+
+    //定义一个矩阵，该矩阵会把虚拟坐标空间变换回归一化设备坐标
+    private static final String U_MATRIX = "u_Matrix";
+    //定义顶底数组存储矩阵
+    private final float[] projectMatrix = new float[16];
+    private int uMatrixLocation;
 
 
     private Context context;
@@ -71,51 +75,6 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     //TODO 只能看到桌子的一个角 为什么呢，OpenGL的坐标范围只在[-1,1] 区间 ，需要将定义的坐标映射到屏幕上的实际物理坐标
-//    float[] tableVerticesWithTriangle = {
-//            //triangle1
-//            0f, 0f,
-//            9f, 14f,
-//            0f, 14f,
-//
-//            //triangle2
-//            0f, 0f,
-//            9f, 0f,
-//            9f, 14f,
-//
-//            //line1
-//            0f, 7f,
-//            9f, 7f,
-//
-//            //mallets
-//            4.5f, 2f,
-//            4.5f, 12f
-//
-//
-//    };
-
-
-//    float[] tableVerticesWithTriangle = {
-//            //Triangle1  X,Y,R,G,B
-//            -0.5f, -0.5f,
-//            0.5f, 0.5f,
-//            -0.5f, 0.5f,
-//
-//            //Triangle2
-//            -0.5f, -0.5f,
-//            0.5f, -0.5f,
-//            0.5f, 0.5f,
-//
-//
-//            //line1
-//            -0.5f, 0f,1f,0f,0f,
-//            0.5f, 0,0f,1f,0f,
-//
-//            //mallets
-//            0f, -0.25f, 0f, 0f, 1f,
-//            0, 0.25f, 1f, 0f, 0f
-//
-//
-//    };
 
     float[] tableVerticesWithTriangle = {
             //Triangle1  X,Y,R,G,B
@@ -178,6 +137,9 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         vPosition = glGetAttribLocation(program, V_POSITION);
         vColor = glGetAttribLocation(program, V_COLOR);
 
+        //正交矩阵
+        uMatrixLocation = glGetUniformLocation(program, U_MATRIX);
+
 
         //将指针移动到缓冲区的第一个元素
         vertexData.position(0);
@@ -212,6 +174,22 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         glViewport(0, 0, width, height);
         Log.i("Hash", "width: " + width + " height:" + height);
 
+        // TODO: 2020-04-09 旋转屏幕导致宽高比变化，因此需要做适配
+        final float aspectRatio = width > height ?
+                (float) width / (float) height :
+                (float) height / (float) width;
+
+        if (width > height) { //横屏情况下，扩展宽度的坐标范围，范围由[-1,1] -->
+                            // [-aspectRatio,aspectRatio] 高度保持[-1,1]
+            Matrix.orthoM(projectMatrix, 0, -aspectRatio, aspectRatio,
+                    -1f, 1f, -1f, 1f);
+
+        } else {
+            Matrix.orthoM(projectMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio,
+                    -1f, 1f);
+
+        }
+
 
     }
 
@@ -221,29 +199,17 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         //clear the  rendering surface  and invoke the glClearColor to fill the screen
         glClear(GLES20.GL_COLOR_BUFFER_BIT);
-
-        //更新着色器u_Color的值
-//        glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
-//        //告诉OpenGl要绘制一个矩形，0代表第一个位置，6表示6个绘制的坐标点，绘制属性为三角形，两个三角形拼接为矩形
-//        glDrawArrays(GL_TRIANGLES, 0, 6);
-//
-//        glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
-//        glDrawArrays(GL_LINES, 6, 2);
-//
-//        glUniform4f(uColorLocation, 0.0f, 1.0f, 0.0f, 0.0f);
-//        glDrawArrays(GL_POINTS, 8, 1);
-//
-//
-//        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f);
-//        glDrawArrays(GL_POINTS, 9, 1);
+        //TODO 传递矩阵给着色器，
+        glUniformMatrix4fv(uMatrixLocation,1,
+                false,projectMatrix,0);
 
         //绘制矩形
-        glDrawArrays(GL_TRIANGLE_FAN,0,6);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
         //绘制线
-        glDrawArrays(GL_LINES,6,2);
+        glDrawArrays(GL_LINES, 6, 2);
         //绘制点
-        glDrawArrays(GL_POINTS,8,1);
-        glDrawArrays(GL_POINTS,9,1);
+        glDrawArrays(GL_POINTS, 8, 1);
+        glDrawArrays(GL_POINTS, 9, 1);
 
 
 
