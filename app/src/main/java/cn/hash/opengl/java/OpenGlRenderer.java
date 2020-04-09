@@ -10,7 +10,6 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 
 import cn.hash.opengl.java.util.ShaderHelper;
@@ -20,6 +19,7 @@ import static android.opengl.GLES20.GL_FLOAT;
 import static android.opengl.GLES20.GL_LINES;
 import static android.opengl.GLES20.GL_POINTS;
 import static android.opengl.GLES20.GL_TRIANGLES;
+import static android.opengl.GLES20.GL_TRIANGLE_FAN;
 import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glDrawArrays;
@@ -39,11 +39,25 @@ import static android.opengl.GLES20.glViewport;
 public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
+    //点的组合（a,b)
     private static final int POSITION_COMPONENT_COUNT = 2;
-    private static final int POINT_SIZE = 4;
+    //每个点的占用字节数
+    private static final int BYTES_PER_FLOAT = 4;
+
+    //颜色的组合（rgb）
+    private static final int COLOR_COMPONENT_COUNT = 3;
+
+    //跨度 就是隔多少个点访问下一个点
+    private static final int STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT;
 
     //to use the fragment_shade define varying named u_Color
     private static final String U_COLOR = "u_Color";
+
+    // color 使用attribute 形式进行颜色属性的数据更新， 而不是采用unifrom形式只能单一的绘制一种确定的颜色。
+    private static final String V_COLOR = "a_Color";
+    private int vColor;
+
+
     //define varying to accept the value
     private int uColorLocation;
 
@@ -80,25 +94,48 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 //    };
 
 
+//    float[] tableVerticesWithTriangle = {
+//            //Triangle1  X,Y,R,G,B
+//            -0.5f, -0.5f,
+//            0.5f, 0.5f,
+//            -0.5f, 0.5f,
+//
+//            //Triangle2
+//            -0.5f, -0.5f,
+//            0.5f, -0.5f,
+//            0.5f, 0.5f,
+//
+//
+//            //line1
+//            -0.5f, 0f,1f,0f,0f,
+//            0.5f, 0,0f,1f,0f,
+//
+//            //mallets
+//            0f, -0.25f, 0f, 0f, 1f,
+//            0, 0.25f, 1f, 0f, 0f
+//
+//
+//    };
+
     float[] tableVerticesWithTriangle = {
-            //Triangle1
-            -0.5f, -0.5f,
-            0.5f, 0.5f,
-            -0.5f, 0.5f,
+            //Triangle1  X,Y,R,G,B
+            0f, 0f, 1f, 1f, 1f,
+            0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
+            -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
 
             //Triangle2
-            -0.5f, -0.5f,
-            0.5f, -0.5f,
-            0.5f, 0.5f,
+            -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+            0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+            0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
 
 
             //line1
-            -0.5f, 0f,
-            0.5f, 0,
+            -0.5f, 0f, 1f, 0f, 0f,
+            0.5f, 0, 0f, 1f, 0f,
 
             //mallets
-            0f, -0.25f,
-            0, 0.24f
+            0f, -0.25f, 0f, 0f, 1f,
+            0, 0.25f, 1f, 0f, 0f
 
 
     };
@@ -107,7 +144,7 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
     public OpenGlRenderer(Context context) {
         this.context = context;
         vertexData = ByteBuffer
-                .allocateDirect(tableVerticesWithTriangle.length * POINT_SIZE)
+                .allocateDirect(tableVerticesWithTriangle.length * BYTES_PER_FLOAT)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         vertexData.put(tableVerticesWithTriangle);
@@ -136,9 +173,12 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         glUseProgram(program);
 
         //获取一个uniform的位置：用来告诉GPU在绘制的时候设置颜色
-        uColorLocation = glGetUniformLocation(program, U_COLOR);
+//        uColorLocation = glGetUniformLocation(program, U_COLOR);
         //获取属性的位置：用来告诉GPU分配位置
         vPosition = glGetAttribLocation(program, V_POSITION);
+        vColor = glGetAttribLocation(program, V_COLOR);
+
+
         //将指针移动到缓冲区的第一个元素
         vertexData.position(0);
         /**
@@ -151,10 +191,15 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
          */
 
         //告诉OpenGL去哪读取数据，读的数据包括大小，多少个为一组。
-        glVertexAttribPointer(vPosition, POSITION_COMPONENT_COUNT, GL_FLOAT, true, 0, vertexData);
+        glVertexAttribPointer(vPosition, POSITION_COMPONENT_COUNT, GL_FLOAT, false, STRIDE, vertexData);
 
         //使得OpenGL去vPosition去寻找数据
         glEnableVertexAttribArray(vPosition);
+
+        //将指针指向颜色属性的位置
+        vertexData.position(POSITION_COMPONENT_COUNT);
+        glVertexAttribPointer(vColor, COLOR_COMPONENT_COUNT, GL_FLOAT, false, STRIDE, vertexData);
+        glEnableVertexAttribArray(vColor);
 
 
     }
@@ -178,19 +223,29 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
         //更新着色器u_Color的值
-        glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
-        //告诉OpenGl要绘制一个矩形，0代表第一个位置，6表示6个绘制的坐标点，绘制属性为三角形，两个三角形拼接为矩形
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+//        glUniform4f(uColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+//        //告诉OpenGl要绘制一个矩形，0代表第一个位置，6表示6个绘制的坐标点，绘制属性为三角形，两个三角形拼接为矩形
+//        glDrawArrays(GL_TRIANGLES, 0, 6);
+//
+//        glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
+//        glDrawArrays(GL_LINES, 6, 2);
+//
+//        glUniform4f(uColorLocation, 0.0f, 1.0f, 0.0f, 0.0f);
+//        glDrawArrays(GL_POINTS, 8, 1);
+//
+//
+//        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f);
+//        glDrawArrays(GL_POINTS, 9, 1);
 
-        glUniform4f(uColorLocation, 1.0f, 1.0f, 0.0f, 1.0f);
-        glDrawArrays(GL_LINES, 6, 2);
+        //绘制矩形
+        glDrawArrays(GL_TRIANGLE_FAN,0,6);
+        //绘制线
+        glDrawArrays(GL_LINES,6,2);
+        //绘制点
+        glDrawArrays(GL_POINTS,8,1);
+        glDrawArrays(GL_POINTS,9,1);
 
-        glUniform4f(uColorLocation, 0.0f, 1.0f, 0.0f, 0.0f);
-        glDrawArrays(GL_POINTS, 8, 1);
 
-
-        glUniform4f(uColorLocation, 0.0f, 0.0f, 1.0f, 1.0f);
-        glDrawArrays(GL_POINTS, 9, 1);
 
 
     }
