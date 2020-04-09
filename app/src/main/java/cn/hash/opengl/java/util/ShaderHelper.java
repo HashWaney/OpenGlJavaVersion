@@ -94,12 +94,13 @@ public class ShaderHelper {
      */
     public static int linkProgram(int vertexShaderId, int fragmentShaderId) {
         int program = glCreateProgram();
-        if (LoggerConfig.ON) {
-            if (program == 0) {
+        if (program == 0) {
+            if (LoggerConfig.ON) {
                 Log.w(TAG, "Could not create program");
             }
             return 0;
         }
+
         glAttachShader(program, vertexShaderId);
         glAttachShader(program, fragmentShaderId);
         glLinkProgram(program);
@@ -117,6 +118,7 @@ public class ShaderHelper {
             }
             return 0;
         }
+        Log.w(TAG, "link program programId:" + program);
         return program;
     }
 
@@ -135,7 +137,7 @@ public class ShaderHelper {
 
         if (LoggerConfig.ON) {
             Log.w(TAG, "Result of validate program :" + validateStatus[0]
-                    + "\n" + " LogInfo :" + glGetProgramInfoLog(programId)
+                    + "\n" + " LogInfo :" + glGetProgramInfoLog(programId) + " programId:" + programId
 
 
             );
