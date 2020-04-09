@@ -12,6 +12,7 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import cn.hash.opengl.java.util.MatrixHelper;
 import cn.hash.opengl.java.util.ShaderHelper;
 import cn.hash.opengl.java.util.TextResourceReader;
 
@@ -31,6 +32,10 @@ import static android.opengl.GLES20.glUniformMatrix4fv;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 import static android.opengl.GLES20.glViewport;
+import static android.opengl.Matrix.multiplyMM;
+import static android.opengl.Matrix.rotateM;
+import static android.opengl.Matrix.setIdentityM;
+import static android.opengl.Matrix.translateM;
 
 import android.opengl.Matrix;
 
@@ -43,7 +48,7 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     //点的组合（a,b)
-    private static final int POSITION_COMPONENT_COUNT = 4;
+    private static final int POSITION_COMPONENT_COUNT = 2;
     //每个点的占用字节数
     private static final int BYTES_PER_FLOAT = 4;
 
@@ -64,9 +69,12 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
     //定义一个矩阵，该矩阵会把虚拟坐标空间变换回归一化设备坐标
     private static final String U_MATRIX = "u_Matrix";
-    //定义顶底数组存储矩阵
+    //定义顶底数组存储矩阵(投影矩阵)
     private final float[] projectMatrix = new float[16];
     private int uMatrixLocation;
+
+    //模型矩阵
+    private final float[] modelMatrix = new float[16];
 
 
     private Context context;
@@ -75,56 +83,56 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     //TODO 只能看到桌子的一个角 为什么呢，OpenGL的坐标范围只在[-1,1] 区间 ，需要将定义的坐标映射到屏幕上的实际物理坐标
-//
-//    float[] tableVerticesWithTriangle = {
-//            //Triangle1  X,Y,R,G,B
-//            0f, 0f, 1f, 1f, 1f,
-//            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
-//            -0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
-//
-//            //Triangle2
-//            -0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
-//            0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
-//            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
-//
-//
-//            //line1
-//            -0.5f, 0f, 1f, 0f, 0f,
-//            0.5f, 0, 0f, 1f, 0f,
-//
-//            //mallets
-//            0f, -0.25f, 0f, 0f, 1f,
-//            0, 0.25f, 1f, 0f, 0f
-//
-//
-//    };
+
+    float[] tableVerticesWithTriangle = {
+            //Triangle1  X,Y,R,G,B
+            0f, 0f, 1f, 1f, 1f,
+            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+            -0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+
+            //Triangle2
+            -0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
+            0.7f, -0.7f, 0.7f, 0.7f, 0.7f,
+            0.7f, 0.7f, 0.7f, 0.7f, 0.7f,
+
+
+            //line1
+            -0.5f, 0f, 1f, 0f, 0f,
+            0.5f, 0, 0f, 1f, 0f,
+
+            //mallets
+            0f, -0.25f, 0f, 0f, 1f,
+            0, 0.25f, 1f, 0f, 0f
+
+
+    };
 
 
     //TODO 展示的是一个立体效果，效果为站在桌子的一侧水平观察对面，立体感，
     // 加入了Z分量和W分量，Z分量设置为0f，W分量远的设置大一些，近的设置小点，呈现一种立体效果。
     // OpenGL会自动使用我们的w值做透视除法。 但是这是一种硬编码方式，如果想让这些物体更动态，
     // 就需要用到矩阵来生成这些值， 比如改变桌子的角度，缩放，
-    float[] tableVerticesWithTriangle = {
-            //Triangle1  X,Y,Z,W,R,G,B
-            0f, 0f, 0f, 1.5f,        1f, 1f, 1f,
-            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
-            -0.7f, 0.7f, 0f, 2f,     0.7f, 0.7f, 0.7f,
-
-            -0.7f, -0.7f, 0f, 1f,    0.7f, 0.7f, 0.7f,
-            0.7f, -0.7f, 0f, 1f,     0.7f, 0.7f, 0.7f,
-            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
-
-
-            //line1
-            -0.5f, 0f,0f,1.5f,       1f, 0f, 0f,
-            0.5f, 0f, 0f,1.5f,       0f, 1f, 0f,
-
-            //mallets
-            0f, -0.25f,0f,1.25f,     0f, 0f, 1f,
-            0, 0.25f,0f,1.25f,       1f, 0f, 0f
-
-
-    };
+//    float[] tableVerticesWithTriangle = {
+//            //Triangle1  X,Y,Z,W,R,G,B
+//            0f, 0f, 0f, 1.5f,        1f, 1f, 1f,
+//            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
+//            -0.7f, 0.7f, 0f, 2f,     0.7f, 0.7f, 0.7f,
+//
+//            -0.7f, -0.7f, 0f, 1f,    0.7f, 0.7f, 0.7f,
+//            0.7f, -0.7f, 0f, 1f,     0.7f, 0.7f, 0.7f,
+//            0.7f, 0.7f, 0f, 2f,      0.7f, 0.7f, 0.7f,
+//
+//
+//            //line1
+//            -0.5f, 0f,0f,1.5f,       1f, 0f, 0f,
+//            0.5f, 0f, 0f,1.5f,       0f, 1f, 0f,
+//
+//            //mallets
+//            0f, -0.25f,0f,1.25f,     0f, 0f, 1f,
+//            0, 0.25f,0f,1.25f,       1f, 0f, 0f
+//
+//
+//    };
 
     public OpenGlRenderer(Context context) {
         this.context = context;
@@ -201,20 +209,40 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         glViewport(0, 0, width, height);
 
         // TODO: 2020-04-09 旋转屏幕导致宽高比变化，因此需要做适配
-        final float aspectRatio = width > height ?
-                (float) width / (float) height :
-                (float) height / (float) width;
+//        final float aspectRatio = width > height ?
+//                (float) width / (float) height :
+//                (float) height / (float) width;
+//
+//        if (width > height) { //横屏情况下，扩展宽度的坐标范围，范围由[-1,1] -->
+//            // [-aspectRatio,aspectRatio] 高度保持[-1,1]
+//            Matrix.orthoM(projectMatrix, 0, -aspectRatio, aspectRatio,
+//                    -1f, 1f, -1f, 1f);
+//
+//        } else {
+//            Matrix.orthoM(projectMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio,
+//                    -1f, 1f);
+//
+//        }
 
-        if (width > height) { //横屏情况下，扩展宽度的坐标范围，范围由[-1,1] -->
-            // [-aspectRatio,aspectRatio] 高度保持[-1,1]
-            Matrix.orthoM(projectMatrix, 0, -aspectRatio, aspectRatio,
-                    -1f, 1f, -1f, 1f);
+        //TODO 桌子不见了，没有给桌子指定z的位置，默认情况下处于z为0 的位置，因为视锥体是从z值为-1的位置开始
+        //除非把它移动到那个距离内。
+        //因此在使用投影矩阵进行投影之前，使用一个平移矩阵把桌子移出来，
+        MatrixHelper.perspectiveM(projectMatrix, 45,
+                (float) width / (float) height,
+                1f, 10f);
 
-        } else {
-            Matrix.orthoM(projectMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio,
-                    -1f, 1f);
+        setIdentityM(modelMatrix, 0);
+        //沿着z轴方向平移-2
+        translateM(modelMatrix, 0, 0f, 0f, -2f);
+        rotateM(modelMatrix,0,-60f,1,0,0);
+        //需要将投影矩阵与平移矩阵相乘，这样坐标最终才会沿着z轴方向移动2个单位。
+        final float[] temp = new float[16];
+        //把投影矩阵和模型矩阵相乘，结果存储在temp中
+        multiplyMM(temp, 0, projectMatrix, 0, modelMatrix, 0);
+        //利用System.arrayCopy()把结果存回projectMatrix 包含了模型矩阵与投影矩阵的组合效应
+        System.arraycopy(temp, 0, projectMatrix, 0, temp.length);
 
-        }
+
 
 
     }
