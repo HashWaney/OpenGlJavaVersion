@@ -193,4 +193,12 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
 
 
     }
+
+    public void handleTouchPress(float normalizedX, float normalizedY) {
+
+    }
+
+    public void handleTouchDrag(float normalizedX, float normalizedY) {
+
+    }
 }
