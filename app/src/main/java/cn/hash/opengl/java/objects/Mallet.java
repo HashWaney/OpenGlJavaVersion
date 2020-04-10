@@ -1,36 +1,35 @@
 package cn.hash.opengl.java.objects;
 
-import cn.hash.opengl.java.Constants;
+import java.util.List;
 import cn.hash.opengl.java.data.VertexArray;
 import cn.hash.opengl.java.program.ColorShaderProgram;
+import cn.hash.opengl.java.util.Geometry;
 
-
-import static android.opengl.GLES20.glDrawArrays;
-import static javax.microedition.khronos.opengles.GL10.GL_POINTS;
 
 /**
  * Created by Hash on 2020-04-10.
+ *
+ * @modify 有了物体构建器 就不用在把木槌画成点
  */
-
-
 public class Mallet {
-    //x，y坐标
-    private static final int POSITION_COMPONENT_COUNT = 2;
-    //rgb 分量颜色
-    private static final int COLOR_COMPONENT_COUNT = 3;
-    //跨度
-    private static final int STRIDE = (POSITION_COMPONENT_COUNT
-            + COLOR_COMPONENT_COUNT) * Constants.BYTES_PER_FLOAT;
+    //x，y,z 坐标
+    private static final int POSITION_COMPONENT_COUNT = 3;
 
-    private static final float[] VERTEX_DATA = {
-            //order of coordinates : x,y,r,g,b
-            0f, -0.5f, 0f, 0f, 1f,
-            0f, 0.5f, 0f, 1f, 0f
-    };
+    private final float radius;
+
+    public final float height;
+
+
+    private final List<ObjectBuilder.DrawCommand> drawCommands;
+
     private final VertexArray vertexArray;
 
-    public Mallet() {
-        vertexArray = new VertexArray(VERTEX_DATA);
+    public Mallet(float radius, float height, int numPoints) {
+        ObjectBuilder.GenerateData generateData = ObjectBuilder.createMallet(new Geometry.Point(0f, 0f, 0f), radius, height, numPoints);
+        this.radius = radius;
+        this.height = height;
+        vertexArray = new VertexArray(generateData.vertexData);
+        drawCommands = generateData.drawCommandList;
     }
 
     public void bindData(ColorShaderProgram colorShaderProgram) {
@@ -38,16 +37,14 @@ public class Mallet {
                 0,
                 colorShaderProgram.getPositionAttributeLocation(),
                 POSITION_COMPONENT_COUNT,
-                STRIDE
+                0
         );
-        vertexArray.setVertexAttributePointer(POSITION_COMPONENT_COUNT,
-                colorShaderProgram.getColorAttributeLocation()
-                , COLOR_COMPONENT_COUNT, STRIDE);
-
     }
 
     public void draw() {
-        glDrawArrays(GL_POINTS, 0, 2);
+        for (ObjectBuilder.DrawCommand drawCommand : drawCommands) {
+            drawCommand.draw();
+        }
     }
 
 }
