@@ -146,4 +146,21 @@ public class ShaderHelper {
 
         return validateStatus[0] != 0;
     }
+
+
+    public static int buildProgram(String vertexShaderSource, String fragmentShaderResource) {
+        int program;
+        int vertexId = compileVertexShader(vertexShaderSource);
+        int fragmentId = compileFragmentShader(fragmentShaderResource);
+
+        program = linkProgram(vertexId, fragmentId);
+        if (LoggerConfig.ON) {
+            validateProgram(program);
+        }
+
+
+        return program;
+    }
+
+
 }

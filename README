@@ -392,15 +392,17 @@
         片段着色器
         precision mediump float;
 
-        uniform sample2D u_TextureUnit;
+        uniform sampler2D u_TextureUnit;
 
         varying vec2 v_TextureCoordinates;
 
         void main(){
             gl_FragColor=texture2D(u_TextUnit,v_TextureCoordinates);
         }
-        sample2D : 这个变量类型指的是一个二维纹理数据的数组
-
+        //sample 错误的
+        //sampler2D正确的。
+        sampler2D : 这个变量类型指的是一个二维纹理数据的数组，接收纹理坐标（数据）
+        v_TextureCoordinates:代表每一个纹理坐标点，刚好把这些坐标点加到一个sample2D的数组里面，
         texture2D：读入纹理中那个特定坐标处的颜色值。接着通过把结果赋值给
         gl_FragColor,这样就可以设置片段的颜色了。
 

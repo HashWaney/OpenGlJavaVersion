@@ -57,7 +57,7 @@ public class TextureHelper {
         glBindTexture(GL_TEXTURE_2D, textureId[0]);
 
         //设置纹理过滤参数
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_NEAREST);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
         //加载纹理到OpenGl并返回ID
         texImage2D(GL_TEXTURE_2D,0,bitmap,0);
