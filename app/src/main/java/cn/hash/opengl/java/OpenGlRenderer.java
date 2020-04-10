@@ -85,9 +85,22 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
                 (float) width / (float) height,
                 1f, 10f);
 
+        for (int i = 0; i < projectMatrix.length; i++) {
+            System.err.println(String.format("before : i =%d , values %f ",i,projectMatrix[i]));
+            System.err.println("\n");
+
+        }
         setIdentityM(modelMatrix, 0);
         //沿着z轴方向平移-2
         translateM(modelMatrix, 0, 0f, 0f, -2f);
+
+        for (int i=0;i<modelMatrix.length;i++)
+        {
+            System.err.println(String.format("i=%d , values =%f",i,modelMatrix[i]));
+            System.err.println("\n");
+        }
+
+
         rotateM(modelMatrix, 0, -60f, 1, 0, 0);
         //需要将投影矩阵与平移矩阵相乘，这样坐标最终才会沿着z轴方向移动2个单位。
         final float[] temp = new float[16];
@@ -95,6 +108,11 @@ public class OpenGlRenderer implements GLSurfaceView.Renderer {
         multiplyMM(temp, 0, projectMatrix, 0, modelMatrix, 0);
         //利用System.arrayCopy()把结果存回projectMatrix 包含了模型矩阵与投影矩阵的组合效应
         System.arraycopy(temp, 0, projectMatrix, 0, temp.length);
+
+        for (int i = 0; i < projectMatrix.length; i++) {
+            System.err.println(String.format("end i = %d ,value =%f ",i,projectMatrix[i]));
+
+        }
 
 
     }

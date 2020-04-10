@@ -1,8 +1,10 @@
 package cn.hash.opengl.java.program;
 
 import android.content.Context;
+import android.util.Log;
 
 import cn.hash.opengl.java.R;
+import cn.hash.opengl.java.util.LoggerConfig;
 
 import static android.opengl.GLES20.glGetAttribLocation;
 import static android.opengl.GLES20.glGetUniformLocation;
